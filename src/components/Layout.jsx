@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-
+import { Link } from 'react-router-dom';
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +33,9 @@ const Layout = ({ children }) => {
                   <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
                 </div>
               </div>
+              <Link to="/interview" className="btn btn-primary text-sm">
+              Interviews
+              </Link>
               <button
                 onClick={handleLogout}
                 className="btn btn-secondary text-sm"

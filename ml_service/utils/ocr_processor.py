@@ -63,12 +63,30 @@ class OCRProcessor:
         return pytesseract.image_to_string(image, config=config)
 
     def extract_text_from_pdf(self, file_bytes):
-        pages = convert_from_bytes(file_bytes, dpi=300)
-        full_text = ""
-        for pg in pages:
-            processed = self._preprocess_image(pg)
-            full_text += self._ocr(processed) + "\n"
-        return full_text
+        try:
+            from PyPDF2 import PdfReader
+            reader = PdfReader(io.BytesIO(file_bytes))
+            text = ""
+            for page in reader.pages:
+                t = page.extract_text()
+                if t:
+                    text += t + "\n"
+            return text
+        except:
+            # fallback to OCR if PDF has no text
+            pages = convert_from_bytes(file_bytes, dpi=300)
+            full_text = ""
+            for pg in pages:
+                processed = self._preprocess_image(pg)
+                full_text += self._ocr(processed) + "\n"
+            return full_text
+
+            pages = convert_from_bytes(file_bytes, dpi=300)
+            full_text = ""
+            for pg in pages:
+                processed = self._preprocess_image(pg)
+                full_text += self._ocr(processed) + "\n"
+            return full_text
 
     def extract_text_from_image(self, file_bytes):
         img = Image.open(io.BytesIO(file_bytes))
@@ -94,13 +112,13 @@ class OCRProcessor:
     #  DETECT QUESTION START
     # -------------------------------------------------------------------
     def _is_question_start(self, line):
-        return bool(re.match(r"^(Q\.|Question:?|\d+\.|\d+\))", line.strip(), re.IGNORECASE))
+        return bool(re.match(r"^(Q\d*\.|Q\.|Question:?|\d+\.|\d+\))", line.strip(), re.IGNORECASE))
 
     # -------------------------------------------------------------------
     #  OPTION LINES (A/B/C/D)
     # -------------------------------------------------------------------
     def _is_option_line(self, line):
-        return bool(re.match(r"^[A-D][\)\.\:\-\s]", line.strip(), re.IGNORECASE))
+        return bool(re.match(r"^[A-D][\)\.\:\-\s]+", line.strip(), re.IGNORECASE))
 
     # -------------------------------------------------------------------
     #  STRICT ANSWER DETECTION

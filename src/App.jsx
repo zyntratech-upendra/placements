@@ -7,7 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import TakeAssessment from './pages/TakeAssessment';
-
+import InterviewComponent from './pages/Interview'
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -28,6 +28,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/interview"
+        element={
+          <ProtectedRoute allowedRoles={['student', 'mentor', 'admin']}>
+            <InterviewComponent />
           </ProtectedRoute>
         }
       />
