@@ -45,9 +45,9 @@ def generate_questions(job_description: str, resume_text: str, duration_seconds:
     # 1. Decide number of questions based on duration
     question_count = calculate_question_count(duration_seconds)
 
-    # 2. Try initializing Groq client
+    # 2. Try initializing open ai client
     try:
-        client = get_client()
+        client = get_clientgpt()
     except ValueError as e:
         logger.warning(f"{e} Falling back to stub questions.")
         # Fallback default
@@ -93,7 +93,7 @@ Generate exactly {question_count} structured interview questions.
     # 5. Call Groq LLM
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -127,8 +127,20 @@ Generate exactly {question_count} structured interview questions.
 # ---------------------------
 
 def generate_reference_answer(question: str, jd: str, resume: str):
-    client = get_client()
-    system_prompt = """You are an interview expert. Write a concise, high-quality, ideal answer to the question below."""
+    client = get_clientgpt()
+    system_prompt = """
+You are an experienced technical interviewer and career coach.
+Your task is to write an ideal model answer to each interview question.
+
+Guidelines:
+- Carefully consider the candidate’s resume and the given job description.
+- Craft a professional, confident, and concise answer that shows relevant experience, technical depth, and problem-solving ability.
+- Highlight practical examples or achievements that align with the role.
+- Avoid generic statements, buzzwords, or overly long explanations.
+- The tone should sound natural, as if spoken by a well-prepared candidate during an interview.
+- Do not include explanations, formatting, or commentary — only provide the direct answer text.
+"""
+
     
     user_prompt = f"""
 Job Description:
@@ -142,7 +154,7 @@ Question:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -162,8 +174,26 @@ def evaluate_answer(question: str, transcript: str, reference_answer: str) -> di
     client = get_clientgpt()
 
     system_prompt = """
-You are an expert interviewer. Evaluate the answer strictly.
-Return ONLY JSON in this form:
+You are an expert technical interviewer. Your job is to evaluate a candidate's response using a structured, consistent rubric.
+
+Follow these rules STRICTLY:
+
+1. Assign each category a score from 1 to 10 (integers only).
+2. Base scores ONLY on the candidate’s actual text. Do NOT infer missing details.
+3. Do NOT give perfect scores unless the answer fully demonstrates excellence.
+4. Do NOT include any text outside the JSON. No explanations. No commentary.
+5. All output must be valid JSON. If you are unsure, return the closest valid JSON.
+
+Evaluation Criteria:
+
+- relevance: Does the answer directly address the question asked?
+- accuracy: Are the technical statements correct and free of errors?
+- depth: Does the answer show reasoning, trade-offs, and understanding?
+- clarity: Is the answer well-structured, clear, and concise?
+- fit: Overall competency for the role based on the answer quality.
+
+Output Format (strict):
+
 {
   "scores": {
     "relevance": int,
@@ -172,11 +202,20 @@ Return ONLY JSON in this form:
     "clarity": int,
     "fit": int
   },
-  "total_score": int,
-  "feedback": ["point 1", "point 2"],
-  "comparison_summary": "short comparison"
+  "total_score": float,
+  "feedback": [
+    "Short, specific point of improvement",
+    "Short, specific strength",
+    "Another short, specific note"
+  ],
+  "comparison_summary": "1–2 sentence comparison with an ideal expert-level answer."
 }
+
+Compute total_score as the average of the five category scores, then scale it to a value between 1 and 10 (rounded to one decimal place).
+
+Return ONLY this JSON. No other text.
 """
+
 
     user_prompt = f"""
 Question: {question}
