@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../config/api';
+import api from '../config/api'
 
 const TakeAssessment = () => {
   const { assessmentId } = useParams();
