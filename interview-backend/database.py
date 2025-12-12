@@ -12,9 +12,30 @@ def get_mongodb_client():
     global _client, _db
 
     if _client is None:
-        mongodb_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
+        # Try to get from config first, then environment variable, then default
+        settings = get_settings()
+        env_uri = os.getenv("MONGODB_URI", "").strip()
+        
+        # Get URI from settings or environment, handling empty strings
+        mongodb_uri = None
+        if settings.mongodb_uri and settings.mongodb_uri.strip():
+            mongodb_uri = settings.mongodb_uri.strip()
+        elif env_uri:
+            mongodb_uri = env_uri
+        else:
+            mongodb_uri = "mongodb://localhost:27017/"
+        
+        # Validate URI has correct scheme
+        if not (mongodb_uri.startswith("mongodb://") or mongodb_uri.startswith("mongodb+srv://")):
+            # If invalid scheme, use default
+            logger = logging.getLogger("backend.database")
+            logger.warning(
+                f"Invalid MongoDB URI scheme '{mongodb_uri}', using default: mongodb://localhost:27017/"
+            )
+            mongodb_uri = "mongodb://localhost:27017/"
+        
         _client = MongoClient(mongodb_uri)
-        db_name = os.getenv("MONGODB_DB_NAME", "ai_interviewer")
+        db_name = settings.mongodb_db_name or os.getenv("MONGODB_DB_NAME", "ai_interviewer")
         _db = _client[db_name]
 
         # Create indexes used by the application
