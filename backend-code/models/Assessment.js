@@ -43,6 +43,12 @@ const assessmentSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+   assignedStudent: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

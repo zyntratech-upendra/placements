@@ -58,7 +58,7 @@ exports.getAllAssessments = async (req, res) => {
         $or: [
           { isPractice: true },
           { allowedStudents: req.user._id },
-          { assessmentType: 'random' }
+           { assessmentType: 'random', assignedStudent: req.user._id }
         ]
       };
     }
@@ -210,6 +210,7 @@ exports.generateRandomAssessment = async (req, res) => {
       totalMarks: numberOfQuestions * 1,
       isPractice: true,
       assessmentType: 'random',
+      assignedStudent: req.user._id,
       createdBy: req.user._id
     });
 
