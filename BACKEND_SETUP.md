@@ -61,7 +61,7 @@ backend/
 ├── utils/
 │   └── seedAdmin.js
 ├── uploads/
-├── .env
+├── .en
 ├── server.js
 └── package.json
 ```
