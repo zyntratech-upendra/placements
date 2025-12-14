@@ -150,13 +150,23 @@ exports.processOCR = async (req, res) => {
 
     try {
       const formData = new FormData();
-      formData.append('file', fs.createReadStream(file.filePath));
+      // Include filename so FastAPI can determine file extension
+      formData.append('file', fs.createReadStream(file.filePath), {
+        filename: file.originalName || file.filename,
+        contentType: file.fileType
+      });
       
-      const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
-      console.log(ML_SERVICE_URL)
+      // ML service is now integrated into interview-backend (port 8000)
+      // Can be overridden via ML_SERVICE_URL env variable if running separately
+      const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+      console.log(`Sending OCR request to: ${ML_SERVICE_URL}/api/parse-document`);
+      console.log(`File: ${file.originalName}, Path: ${file.filePath}`);
+      
       const response = await axios.post(`${ML_SERVICE_URL}/api/parse-document`, formData, {
         headers: formData.getHeaders(),
-        timeout: 60000
+        timeout: 60000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
       });
       console.log('OCR Service Response:', response.data);
 
@@ -196,10 +206,19 @@ exports.processOCR = async (req, res) => {
       file.ocrError = ocrError.message;
       await file.save();
 
+      // Log detailed error for debugging
+      console.error('OCR Error Details:', {
+        message: ocrError.message,
+        response: ocrError.response?.data,
+        status: ocrError.response?.status,
+        code: ocrError.code
+      });
+
       return res.status(500).json({
         success: false,
         message: 'OCR service error',
-        error: ocrError.message
+        error: ocrError.response?.data?.error || ocrError.message || 'Unknown error occurred',
+        details: ocrError.response?.data || null
       });
     }
   } catch (error) {

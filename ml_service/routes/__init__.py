@@ -1,3 +1,3 @@
-from .parser import parser_bp
+from .parser import router as parser_router
 
-__all__ = ['parser_bp']
+__all__ = ['parser_router']
