@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import Optional
 
 class Settings(BaseSettings):
-    groq_api_key: Optional[str] = None
+    groq_api_key: Optional[str] =  None
     openai_api_key: Optional[str] = None
     # Load these values from environment/.env via BaseSettings
     mongodb_uri: Optional[str] = None
