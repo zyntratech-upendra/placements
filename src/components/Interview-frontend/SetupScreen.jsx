@@ -7,6 +7,8 @@ function SetupScreen({ onSessionCreated }) {
   const [duration, setDuration] = useState(300)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [interviewType, setInterviewType] = useState('technical')
+
 
   const handleResumeChange = (e) => {
     const file = e.target.files[0]
@@ -39,6 +41,8 @@ function SetupScreen({ onSessionCreated }) {
       formData.append('job_description', jobDescription)
       formData.append('resume', resume)
       formData.append('duration', duration)
+      formData.append('interview_type', interviewType)
+
       console.log(formData);
 
       const response = await fetch('http://localhost:8000/api/create-session', {
@@ -111,6 +115,20 @@ function SetupScreen({ onSessionCreated }) {
               <option value={1200}>20 minutes</option>
             </select>
           </div>
+
+          <div className="form-group">
+  <label htmlFor="interviewType">Interview Type</label>
+  <select
+    id="interviewType"
+    value={interviewType}
+    onChange={(e) => setInterviewType(e.target.value)}
+    disabled={loading}
+  >
+    <option value="technical">Technical Interview</option>
+    <option value="hr">HR Interview</option>
+  </select>
+</div>
+
 
           {error && <div className="error-message">{error}</div>}
 

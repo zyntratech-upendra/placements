@@ -8,6 +8,10 @@ import StudentDashboard from './pages/StudentDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import TakeAssessment from './pages/TakeAssessment';
 import InterviewComponent from './pages/Interview'
+
+
+
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 

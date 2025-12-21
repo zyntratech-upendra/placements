@@ -204,6 +204,11 @@
   border-left-color: #fbbf24;
 }
 
+.status-message.speaking {
+  background: rgba(34, 197, 94, 0.2);
+  border-left-color: #22c55e;
+}
+
 .upload-spinner {
   width: 16px;
   height: 16px;
@@ -366,4 +371,35 @@
 }
 .stop-button:hover {
   background: #e33d3d;
+}
+
+.interview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;   /* ⬅ push everything to right */
+  gap: 20px;
+  padding: 12px 20px;
+
+}
+
+/* Question numbers */
+.question-grid {
+  display: flex;
+  gap: 10px;
+}
+
+/* Finish Interview button */
+.finish-interview-button {
+  background-color: #ef4444;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.finish-interview-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
