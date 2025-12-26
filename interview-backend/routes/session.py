@@ -12,13 +12,22 @@ router = APIRouter()
 async def create_session(
     job_description: str = Form(...),
     resume: UploadFile = File(...),
-    duration: int = Form(...)
+    duration: int = Form(...),
+    interview_type: str = Form("technical")  # Default to technical if not provided
 ):
     try:
+        # Validate interview type
+        if interview_type not in ["technical", "hr"]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid interview_type. Must be 'technical' or 'hr', got '{interview_type}'"
+            )
+        
         resume_bytes = await resume.read()
         resume_text = extract_text_from_pdf(resume_bytes)
 
-        questions = generate_questions(job_description, resume_text, duration)
+        # Pass interview_type to question generation
+        questions = generate_questions(job_description, resume_text, duration, interview_type)
 
         session_id = str(uuid.uuid4())
 
@@ -28,6 +37,7 @@ async def create_session(
                 "job_description": job_description,
                 "resume_text": resume_text,
                 "duration_seconds": duration,
+                "interview_type": interview_type,  # Store interview type
                 "questions": questions,
                 "status": "created",
                 "created_at": datetime.utcnow()
@@ -37,9 +47,12 @@ async def create_session(
         return {
             "session_id": session_id,
             "questions": questions,
-            "duration_seconds": duration
+            "duration_seconds": duration,
+            "interview_type": interview_type
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

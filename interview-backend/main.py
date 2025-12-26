@@ -11,14 +11,9 @@ if str(project_root) not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routes import session, upload, analyze
+from routes import session, upload, analyze, ocr
 from database import get_mongodb_client
-
-# Import ML service routes
-ml_service_path = Path(__file__).parent.parent / "ml_service"
-if str(ml_service_path) not in sys.path:
-    sys.path.insert(0, str(ml_service_path))
-from ml_service.routes import parser_router
+from config import get_ocr_config
 
 app = FastAPI(title="AI Interviewer API")
 
@@ -33,7 +28,7 @@ app.add_middleware(
 app.include_router(session.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
 app.include_router(analyze.router, prefix="/api")
-app.include_router(parser_router, prefix="/api")  # ML OCR Service routes
+app.include_router(ocr.router, prefix="/api")  # OCR Service routes
 
 # Use absolute paths
 frontend_dir = project_root / "frontend"
@@ -62,13 +57,13 @@ logging.basicConfig(level=logging.INFO)
 async def startup_event():
     logger = logging.getLogger("backend.main")
     
-    # Initialize ML service upload folder
+    # Initialize OCR service upload folder
     try:
-        from ml_service.config import Config
-        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-        logger.info("ML OCR Service integrated and ready")
+        ocr_config = get_ocr_config()
+        os.makedirs(ocr_config["UPLOAD_FOLDER"], exist_ok=True)
+        logger.info("OCR Service integrated and ready")
     except Exception as e:
-        logger.warning(f"ML service initialization warning: {e}")
+        logger.warning(f"OCR service initialization warning: {e}")
     
     # This will create the MongoClient and log connection status from database.py
     try:

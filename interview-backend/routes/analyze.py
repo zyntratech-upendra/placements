@@ -42,6 +42,8 @@ async def analyze_session(session_id: str):
                     or session.get("resume_content")
                     or ""
                 )
+                # Get interview type from session, default to "technical" for backward compatibility
+                interview_type = session.get("interview_type", "technical")
 
                 answers = list(db.interview_answers.find({"session_id": session_id}))
 
@@ -66,7 +68,8 @@ async def analyze_session(session_id: str):
                             reference_cache[qid] = generate_reference_answer(
                                 question=question_text,
                                 jd=jd_text,
-                                resume=resume_text
+                                resume=resume_text,
+                                interview_type=interview_type
                             )
                         reference_answer = reference_cache[qid]
                     except Exception as ref_err:
@@ -77,7 +80,8 @@ async def analyze_session(session_id: str):
                         evaluation = evaluate_answer(
                             question=question_text,
                             transcript=answer["transcript"],
-                            reference_answer=reference_answer
+                            reference_answer=reference_answer,
+                            interview_type=interview_type
                         )
 
                         if not isinstance(evaluation, dict):
