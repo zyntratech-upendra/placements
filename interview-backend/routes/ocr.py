@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     ocr_processor = OCRProcessor()
+    logger.info("OCR Processor initialized successfully with GPT-4o-mini Vision")
 except Exception as e:
     logger.error(f"Failed to initialize OCR processor: {str(e)}")
     ocr_processor = None
@@ -26,8 +27,11 @@ def allowed_file(filename: str) -> bool:
 @router.post("/parse-document")
 async def parse_document(file: UploadFile = File(...)):
     """
-    Parse document and extract questions using OCR.
+    Parse document and extract MCQ questions using GPT-4o-mini Vision API.
     Accepts PDF, JPG, JPEG, PNG files.
+    
+    For PDFs with multiple pages, the document is automatically split into chunks
+    and processed page by page to ensure accurate extraction.
     """
     try:
         if not ocr_processor:
@@ -35,7 +39,7 @@ async def parse_document(file: UploadFile = File(...)):
                 status_code=503,
                 content={
                     'success': False,
-                    'error': 'OCR service not initialized. Check Tesseract installation.',
+                    'error': 'OCR service not initialized. Check OPENAI_API_KEY in environment variables.',
                     'questions': []
                 }
             )
@@ -94,11 +98,31 @@ async def parse_document(file: UploadFile = File(...)):
             )
 
         logger.info(f"Processing file: {filename} ({file_size} bytes, type: {file_ext})")
-        result = ocr_processor.process_document(file_bytes, file_ext)
-        logger.info(f"OCR result: {len(result.get('questions', []))} valid questions extracted")
-
-        status_code = 200 if result['success'] else 400
-        return JSONResponse(status_code=status_code, content=result)
+        
+        # Process document with GPT-4o-mini Vision
+        try:
+            result = ocr_processor.process_document(file_bytes, file_ext)
+            logger.info(f"OCR result: {len(result.get('questions', []))} valid questions extracted")
+            
+            status_code = 200 if result['success'] else 400
+            return JSONResponse(status_code=status_code, content=result)
+        except ValueError as ve:
+            # Handle Poppler installation errors specifically
+            error_msg = str(ve)
+            if "poppler" in error_msg.lower():
+                logger.error("Poppler installation error detected")
+                return JSONResponse(
+                    status_code=503,
+                    content={
+                        'success': False,
+                        'error': 'Poppler is required for PDF processing. Please install Poppler and ensure it is in your system PATH. See POPPLER_INSTALLATION_WINDOWS.md for instructions.',
+                        'questions': [],
+                        'total_extracted': 0,
+                        'total_valid': 0,
+                        'installation_guide': 'https://github.com/oschwartz10612/poppler-windows/releases'
+                    }
+                )
+            raise
 
     except HTTPException:
         raise
@@ -117,8 +141,10 @@ async def parse_document(file: UploadFile = File(...)):
 @router.get("/health")
 async def health_check():
     """Health check endpoint for OCR service"""
+    status = 'healthy' if ocr_processor else 'unhealthy'
     return {
-        'status': 'healthy',
-        'service': 'OCR Parser Service'
+        'status': status,
+        'service': 'GPT-4o-mini Vision OCR Parser Service',
+        'initialized': ocr_processor is not None,
+        'endpoint': '/api/parse-document'
     }
-
