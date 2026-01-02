@@ -8,6 +8,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import TakeAssessment from './pages/TakeAssessment';
 import AssessmentResults from './components/AssessmentResults';
+import Interview from './pages/Interview';
+import MyInterviews from './components/Interview-frontend/MyInterview';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -41,6 +43,24 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/interview"
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <Interview />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="student/interview-results/:sessionId"
+        element={
+          <ProtectedRoute allowedRoles={['student']}> 
+
+            <MyInterviews />
+          </ProtectedRoute>
+        }
+      />
+
 
       <Route
         path="/student/assessment/:assessmentId"

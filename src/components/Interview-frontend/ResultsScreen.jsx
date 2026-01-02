@@ -12,9 +12,19 @@ function ResultsScreen({ sessionId, onStartNew }) {
     fetchResults()
   }, [sessionId])
 
+  const token = localStorage.getItem('token')
+
+const authHeaders = {
+  Authorization: `Bearer ${token}`
+}
+
+
   const fetchResults = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/session/${sessionId}`)
+      const response = await fetch(`http://localhost:8000/api/session/${sessionId}`,{
+        headers: authHeaders
+      })
+      console.log("Fetch Results Response:", response);
 
       if (!response.ok) {
         throw new Error('Failed to fetch results')
@@ -32,7 +42,9 @@ function ResultsScreen({ sessionId, onStartNew }) {
 
   const handleExportPDF = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/export-pdf/${sessionId}`)
+      const response = await fetch(`http://localhost:8000/api/export-pdf/${sessionId}`,{
+        headers: authHeaders
+      })
 
       if (!response.ok) {
         throw new Error('Failed to export PDF')

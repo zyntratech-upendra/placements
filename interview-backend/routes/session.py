@@ -1,8 +1,7 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from database import get_db
 from services.pdf_service import extract_text_from_pdf
 from services.llm_service import generate_questions
-import json
 import uuid
 from datetime import datetime
 
@@ -10,74 +9,97 @@ router = APIRouter()
 
 @router.post("/create-session")
 async def create_session(
+    request: Request,
     job_description: str = Form(...),
     resume: UploadFile = File(...),
     duration: int = Form(...),
-    interview_type: str = Form("technical")  # Default to technical if not provided
+    interview_type: str = Form("technical")
 ):
-    try:
-        # Validate interview type
-        if interview_type not in ["technical", "hr"]:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid interview_type. Must be 'technical' or 'hr', got '{interview_type}'"
-            )
-        
-        resume_bytes = await resume.read()
-        resume_text = extract_text_from_pdf(resume_bytes)
+    user_id = request.state.user["_id"]
 
-        # Pass interview_type to question generation
-        questions = generate_questions(job_description, resume_text, duration, interview_type)
+    if interview_type not in ["technical", "hr"]:
+        raise HTTPException(status_code=400, detail="Invalid interview type")
 
-        session_id = str(uuid.uuid4())
+    resume_bytes = await resume.read()
+    resume_text = extract_text_from_pdf(resume_bytes)
 
-        with get_db() as db:
-            session_doc = {
-                "id": session_id,
-                "job_description": job_description,
-                "resume_text": resume_text,
-                "duration_seconds": duration,
-                "interview_type": interview_type,  # Store interview type
-                "questions": questions,
-                "status": "created",
-                "created_at": datetime.utcnow()
-            }
-            db.interview_sessions.insert_one(session_doc)
+    questions = generate_questions(
+        job_description,
+        resume_text,
+        duration,
+        interview_type
+    )
 
-        return {
-            "session_id": session_id,
-            "questions": questions,
+    session_id = str(uuid.uuid4())
+
+    with get_db() as db:
+        db.interview_sessions.insert_one({
+            "id": session_id,
+            "user_id": user_id,
+            "job_description": job_description,
+            "resume_text": resume_text,
             "duration_seconds": duration,
-            "interview_type": interview_type
-        }
+            "interview_type": interview_type,
+            "questions": questions,
+            "status": "created",
+            "final_score": None,
+            "created_at": datetime.utcnow(),
+            "completed_at": None
+        })
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "session_id": session_id,
+        "questions": questions,
+        "duration_seconds": duration,
+        "interview_type": interview_type
+    }
+
 
 @router.get("/session/{session_id}")
-async def get_session(session_id: str):
-    try:
-        with get_db() as db:
-            session = db.interview_sessions.find_one({"id": session_id})
+async def get_session(session_id: str, request: Request):
+    user_id = request.state.user["_id"]
 
-            if not session:
-                raise HTTPException(status_code=404, detail="Session not found")
+    with get_db() as db:
+        session = db.interview_sessions.find_one({
+            "id": session_id,
+            "user_id": user_id
+        })
 
-            session.pop("_id", None)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
 
-            answers = list(db.interview_answers.find({"session_id": session_id}))
+        session.pop("_id", None)
 
-            for answer in answers:
-                answer.pop("_id", None)
+        answers = list(db.interview_answers.find({"session_id": session_id}))
+        for a in answers:
+            a.pop("_id", None)
 
-        return {
-            "session": session,
-            "answers": answers
-        }
+    return {
+        "session": session,
+        "answers": answers
+    }
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/my-sessions")
+async def get_my_sessions(request: Request):
+    # ✅ AUTH CHECK (prevents crash)
+    if not request.state.user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # ✅ FIXED KEY NAME
+    user_id = request.state.user["_id"]
+
+    print("Fetching sessions for user:", user_id)
+
+    with get_db() as db:
+        sessions = list(
+            db.interview_sessions
+            .find({"user_id": user_id})
+            .sort("created_at", -1)
+        )
+
+        for s in sessions:
+            s.pop("_id", None)
+
+    return {"sessions": sessions}

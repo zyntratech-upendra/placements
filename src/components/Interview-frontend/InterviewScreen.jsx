@@ -24,6 +24,11 @@ function InterviewScreen({ sessionData, onComplete }) {
   const questions = sessionData.questions || []
   const currentQuestion = questions[currentQuestionIndex]
   const totalQuestions = questions.length
+const token = localStorage.getItem('token') // ✅ JWT
+
+  const authHeaders = {
+    Authorization: `Bearer ${token}`
+  }
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -86,6 +91,7 @@ function InterviewScreen({ sessionData, onComplete }) {
         `http://localhost:8000/api/upload-answer/${sessionData.session_id}/${currentQuestion.id}`,
         {
           method: 'POST',
+          headers: authHeaders ,
           body: formData,
         }
       )
@@ -168,7 +174,7 @@ function InterviewScreen({ sessionData, onComplete }) {
     try {
       const response = await fetch(
         `http://localhost:8000/api/analyze/${sessionData.session_id}`,
-        { method: 'POST' }
+        { method: 'POST' , headers: authHeaders }
       )
 
       if (!response.ok) {

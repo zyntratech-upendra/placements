@@ -9,6 +9,12 @@ function SetupScreen({ onSessionCreated }) {
   const [error, setError] = useState('')
   const [interviewType, setInterviewType] = useState('technical')
 
+  const token = localStorage.getItem('token') // ✅ JWT
+
+  const authHeaders = {
+    Authorization: `Bearer ${token}`
+  }
+
 
   const handleResumeChange = (e) => {
     const file = e.target.files[0]
@@ -43,12 +49,18 @@ function SetupScreen({ onSessionCreated }) {
       formData.append('duration', duration)
       formData.append('interview_type', interviewType)
 
-      console.log(formData);
+      const token = localStorage.getItem('token') // ✅ AUTH TOKEN
 
-      const response = await fetch('http://localhost:8000/api/create-session', {
-        method: 'POST',
-        body: formData,
-      })
+      const response = await fetch(
+        'http://localhost:8000/api/create-session',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}` // ✅ REQUIRED
+          },
+          body: formData
+        }
+      )
 
       if (!response.ok) {
         throw new Error('Failed to create interview session')
@@ -56,6 +68,7 @@ function SetupScreen({ onSessionCreated }) {
 
       const data = await response.json()
       onSessionCreated(data)
+
     } catch (err) {
       setError(err.message || 'Failed to create session. Please try again.')
     } finally {
@@ -117,22 +130,25 @@ function SetupScreen({ onSessionCreated }) {
           </div>
 
           <div className="form-group">
-  <label htmlFor="interviewType">Interview Type</label>
-  <select
-    id="interviewType"
-    value={interviewType}
-    onChange={(e) => setInterviewType(e.target.value)}
-    disabled={loading}
-  >
-    <option value="technical">Technical Interview</option>
-    <option value="hr">HR Interview</option>
-  </select>
-</div>
-
+            <label htmlFor="interviewType">Interview Type</label>
+            <select
+              id="interviewType"
+              value={interviewType}
+              onChange={(e) => setInterviewType(e.target.value)}
+              disabled={loading}
+            >
+              <option value="technical">Technical Interview</option>
+              <option value="hr">HR Interview</option>
+            </select>
+          </div>
 
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" className="submit-button" disabled={loading}>
+          <button
+            type="submit"
+            className="submit-button"
+            disabled={loading}
+          >
             {loading ? 'Creating Session...' : 'Start Interview'}
           </button>
         </form>
