@@ -7,10 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import MentorDashboard from './pages/MentorDashboard';
 import TakeAssessment from './pages/TakeAssessment';
-import InterviewComponent from './pages/Interview'
-
-
-
+import AssessmentResults from './components/AssessmentResults';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -35,14 +32,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/interview"
-        element={
-          <ProtectedRoute allowedRoles={['student', 'mentor', 'admin']}>
-            <InterviewComponent />
-          </ProtectedRoute>
-        }
-      />
 
       <Route
         path="/student"
@@ -58,6 +47,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <TakeAssessment />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/assessment-results/:attemptId"
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <AssessmentResults />
           </ProtectedRoute>
         }
       />

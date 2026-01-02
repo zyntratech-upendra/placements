@@ -185,14 +185,24 @@ const StudentDashboard = () => {
                       {new Date(attempt.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900">{attempt.percentage}%</p>
-                    <p className="text-sm text-gray-600">
-                      {attempt.totalScore}/{attempt.assessment?.totalMarks}
-                    </p>
-                    <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${getStatusColor(attempt.status)}`}>
-                      {attempt.status}
-                    </span>
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <p className="text-2xl font-bold text-gray-900">{attempt.percentage}%</p>
+                      <p className="text-sm text-gray-600">
+                        {attempt.totalScore}/{attempt.assessment?.totalMarks}
+                      </p>
+                      <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${getStatusColor(attempt.status)}`}>
+                        {attempt.status}
+                      </span>
+                    </div>
+                    {attempt.status === 'submitted' && (
+                      <button
+                        onClick={() => navigate(`/assessment-results/${attempt._id}`)}
+                        className="btn btn-primary text-sm whitespace-nowrap"
+                      >
+                        View Results
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

@@ -19,6 +19,7 @@ app.use('/api/folders', require('./routes/folders'));
 app.use('/api/files', require('./routes/files'));
 app.use('/api/assessments', require('./routes/assessments'));
 app.use('/api/attempts', require('./routes/attempts'));
+app.use('/api/jobs', require('./routes/jobRoutes'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Placement Portal API is running' });

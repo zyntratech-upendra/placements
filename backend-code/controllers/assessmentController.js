@@ -58,7 +58,7 @@ exports.getAllAssessments = async (req, res) => {
         $or: [
           { isPractice: true },
           { allowedStudents: req.user._id },
-           { assessmentType: 'random', assignedStudent: req.user._id }
+          { assessmentType: 'random' }
         ]
       };
     }
@@ -86,13 +86,23 @@ exports.getAssessmentById = async (req, res) => {
   try {
     const assessment = await Assessment.findById(req.params.id)
       .populate('folder', 'name companyName')
-      .populate('questions')
+      .populate({
+        path: 'questions',
+        select: 'questionText options correctAnswer difficulty topic questionType'
+      })
       .populate('createdBy', 'name email');
 
     if (!assessment) {
       return res.status(404).json({
         success: false,
         message: 'Assessment not found'
+      });
+    }
+
+    if (!assessment.questions || assessment.questions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assessment has no questions'
       });
     }
 
@@ -210,14 +220,18 @@ exports.generateRandomAssessment = async (req, res) => {
       totalMarks: numberOfQuestions * 1,
       isPractice: true,
       assessmentType: 'random',
-      assignedStudent: req.user._id,
       createdBy: req.user._id
+    });
+
+    const populatedAssessment = await Assessment.findById(assessment._id).populate({
+      path: 'questions',
+      select: 'questionText options correctAnswer difficulty topic questionType'
     });
 
     res.status(201).json({
       success: true,
       message: 'Random assessment generated successfully',
-      assessment
+      assessment: populatedAssessment
     });
   } catch (error) {
     res.status(500).json({

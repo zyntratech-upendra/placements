@@ -36,12 +36,14 @@ const Layout = ({ children }) => {
               <Link to="/interview" className="btn btn-primary text-sm">
               Interviews
               </Link>
+             
               <button
                 onClick={handleLogout}
                 className="btn btn-secondary text-sm"
               >
                 Logout
               </button>
+
             </div>
           </div>
         </div>

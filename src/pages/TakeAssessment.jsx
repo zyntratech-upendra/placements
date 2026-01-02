@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../config/api'
+import api from '../config/api';
 
 const TakeAssessment = () => {
   const { assessmentId } = useParams();
@@ -15,6 +15,7 @@ const TakeAssessment = () => {
   useEffect(() => {
     initializeAssessment();
   }, [assessmentId]);
+  
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -27,24 +28,37 @@ const TakeAssessment = () => {
 
   const initializeAssessment = async () => {
     try {
-      const { data: assessmentData } = await api.get(`/assessments/${assessmentId}`);
-      setAssessment(assessmentData.assessment);
-      setTimeLeft(assessmentData.assessment.duration * 60);
-
       const { data: attemptData } = await api.post('/attempts/start', { assessmentId });
-      setAttempt(attemptData.attempt);
 
+      if (!attemptData.assessment) {
+        throw new Error('Assessment not found');
+      }
+
+      if (!attemptData.assessment.questions || attemptData.assessment.questions.length === 0) {
+        throw new Error('Assessment has no questions');
+      }
+
+      setAssessment(attemptData.assessment);
+      setAttempt(attemptData.attempt);
+      setTimeLeft(attemptData.assessment.duration * 60);
       setLoading(false);
     } catch (error) {
       console.error('Error initializing assessment:', error);
-      alert('Error loading assessment');
+      alert('Error loading assessment: ' + (error.response?.data?.message || error.message));
       navigate('/student');
     }
   };
 
-  const handleAnswerSelect = async (questionId, answer) => {
-    setAnswers({ ...answers, [questionId]: answer });
 
+  const getOptionKey = (index) => {
+  return String.fromCharCode(65 + index); // 0→A, 1→B, 2→C, 3→D
+};
+
+
+  const handleAnswerSelect = async (questionId, answer) => {
+    console.log('Selected answer:', answer);
+    setAnswers({ ...answers, [questionId]: answer });
+    
     try {
       await api.post('/attempts/answer', {
         attemptId: attempt._id,
@@ -58,12 +72,11 @@ const TakeAssessment = () => {
 
   const handleSubmit = async () => {
     try {
-      await api.post('/attempts/submit', { attemptId: attempt._id });
-      alert('Assessment submitted successfully!');
-      navigate('/student');
+      const { data } = await api.post('/attempts/submit', { attemptId: attempt._id });
+      navigate(`/assessment-results/${data.attempt._id}`);
     } catch (error) {
       console.error('Error submitting assessment:', error);
-      alert('Error submitting assessment');
+      alert('Error submitting assessment: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -118,31 +131,39 @@ const TakeAssessment = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-6">{question.questionText}</h2>
 
           <div className="space-y-3">
-            {question.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswerSelect(question._id, option)}
-                className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                  answers[question._id] === option
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${
-                    answers[question._id] === option
-                      ? 'border-blue-500 bg-blue-500'
-                      : 'border-gray-300'
-                  }`}>
-                    {answers[question._id] === option && (
-                      <div className="w-3 h-3 bg-white rounded-full"></div>
-                    )}
-                  </div>
-                  <span className="text-gray-900">{option}</span>
-                </div>
-              </button>
-            ))}
+  {question.options.map((option, index) => {
+    const optionKey = getOptionKey(index);
+    const isSelected = answers[question._id] === optionKey;
+
+    return (
+      <button
+        key={index}
+        onClick={() => handleAnswerSelect(question._id, optionKey)}
+        className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+          isSelected
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-200 hover:border-blue-300'
+        }`}
+      >
+        <div className="flex items-center">
+          <div
+            className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${
+              isSelected
+                ? 'border-blue-500 bg-blue-500'
+                : 'border-gray-300'
+            }`}
+          >
+            {isSelected && (
+              <div className="w-3 h-3 bg-white rounded-full"></div>
+            )}
           </div>
+          <span className="text-gray-900">{option}</span>
+        </div>
+      </button>
+    );
+  })}
+</div>
+
         </div>
 
         <div className="flex justify-between items-center">

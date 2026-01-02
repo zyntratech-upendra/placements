@@ -6,7 +6,7 @@ exports.startAttempt = async (req, res) => {
   try {
     const { assessmentId } = req.body;
 
-    const assessment = await Assessment.findById(assessmentId);
+    const assessment = await Assessment.findById(assessmentId).populate('questions');
 
     if (!assessment) {
       return res.status(404).json({
@@ -15,17 +15,28 @@ exports.startAttempt = async (req, res) => {
       });
     }
 
+    if (!assessment.questions || assessment.questions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assessment has no questions'
+      });
+    }
+
     const existingAttempt = await Attempt.findOne({
       assessment: assessmentId,
       student: req.user._id,
       status: 'in_progress'
-    });
+    }).populate('assessment');
 
     if (existingAttempt) {
+      if (!existingAttempt.assessment.questions) {
+        existingAttempt.assessment = await Assessment.findById(assessmentId).populate('questions');
+      }
       return res.status(200).json({
         success: true,
         message: 'Resume existing attempt',
-        attempt: existingAttempt
+        attempt: existingAttempt,
+        assessment
       });
     }
 
@@ -38,7 +49,8 @@ exports.startAttempt = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Attempt started successfully',
-      attempt
+      attempt,
+      assessment
     });
   } catch (error) {
     res.status(500).json({
@@ -70,6 +82,8 @@ exports.submitAnswer = async (req, res) => {
     }
 
     const question = await ParsedQuestion.findById(questionId);
+    console.log(question.correctAnswer);
+    console.log(selectedAnswer);
     const isCorrect = question.correctAnswer === selectedAnswer;
     const marksObtained = isCorrect ? 1 : 0;
 
