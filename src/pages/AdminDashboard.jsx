@@ -4,6 +4,7 @@ import api from '../config/api';
 import FolderManagement from '../components/admin/FolderManagement';
 import UserManagement from '../components/admin/UserManagement';
 import AssessmentManagement from '../components/admin/AssessmentManagement';
+import CompanyManagement from '../components/admin/CompanyManagement';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('folders');
@@ -41,7 +42,8 @@ const AdminDashboard = () => {
   const tabs = [
     { id: 'folders', label: 'Folders & Files', icon: '📁' },
     { id: 'users', label: 'User Management', icon: '👥' },
-    { id: 'assessments', label: 'Assessments', icon: '📝' }
+    { id: 'assessments', label: 'Assessments', icon: '📝' },
+    { id: 'companies', label: 'Interview Companies', icon: '🏢' }
   ];
 
   return (
@@ -116,6 +118,7 @@ const AdminDashboard = () => {
             {activeTab === 'folders' && <FolderManagement />}
             {activeTab === 'users' && <UserManagement />}
             {activeTab === 'assessments' && <AssessmentManagement />}
+            {activeTab === 'companies' && <CompanyManagement />}
           </div>
         </div>
       </div>

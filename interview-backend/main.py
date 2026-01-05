@@ -11,7 +11,7 @@ if str(project_root) not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routes import session, upload, analyze, ocr
+from routes import session, upload, analyze, ocr, companies
 from database import get_mongodb_client
 from config import get_ocr_config
 from middleware.auth import AuthMiddleware
@@ -31,7 +31,7 @@ app.include_router(session.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
 app.include_router(analyze.router, prefix="/api")
 app.include_router(ocr.router, prefix="/api")  # OCR Service routes
-app.add_middleware(AuthMiddleware)
+app.include_router(companies.router, prefix="/api")  # Company management routes
 
 
 # Use absolute paths

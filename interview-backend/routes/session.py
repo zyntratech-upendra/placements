@@ -4,39 +4,100 @@ from services.pdf_service import extract_text_from_pdf
 from services.llm_service import generate_questions
 import uuid
 from datetime import datetime
+from typing import Optional
 
 router = APIRouter()
 
 @router.post("/create-session")
 async def create_session(
     request: Request,
-    job_description: str = Form(...),
-    resume: UploadFile = File(...),
+    interview_mode: str = Form(...),  # "general" or "company"
+    job_description: str = Form(None),
+    resume: UploadFile = File(None),
     duration: int = Form(...),
-    interview_type: str = Form("technical")
+    interview_type: str = Form("technical"),
+    company_id: Optional[str] = Form(None)
 ):
     user_id = request.state.user["_id"]
 
+    if interview_mode not in ["general", "company"]:
+        raise HTTPException(status_code=400, detail="Invalid interview mode. Must be 'general' or 'company'")
+    
     if interview_type not in ["technical", "hr"]:
-        raise HTTPException(status_code=400, detail="Invalid interview type")
+        raise HTTPException(status_code=400, detail="Invalid interview type. Must be 'technical' or 'hr'")
 
-    resume_bytes = await resume.read()
-    resume_text = extract_text_from_pdf(resume_bytes)
+    questions = []
+    resume_text = ""
+    session_company_id = None
 
-    questions = generate_questions(
-        job_description,
-        resume_text,
-        duration,
-        interview_type
-    )
+    if interview_mode == "general":
+        # General interview - generate questions using LLM
+        if not job_description:
+            raise HTTPException(status_code=400, detail="Job description is required for general interview")
+        if not resume:
+            raise HTTPException(status_code=400, detail="Resume is required for general interview")
+        
+        resume_bytes = await resume.read()
+        resume_text = extract_text_from_pdf(resume_bytes)
+
+        questions = generate_questions(
+            job_description,
+            resume_text,
+            duration,
+            interview_type
+        )
+    else:
+        # Company-based interview - get questions from database
+        if not company_id:
+            raise HTTPException(status_code=400, detail="Company ID is required for company-based interview")
+        
+        session_company_id = company_id
+        
+        with get_db() as db:
+            # Verify company exists
+            company = db.companies.find_one({"id": company_id})
+            if not company:
+                raise HTTPException(status_code=404, detail="Company not found")
+            
+            # Get questions for this company and interview type
+            company_questions = list(db.company_questions.find({
+                "company_id": company_id,
+                "interview_type": interview_type
+            }))
+            
+            if not company_questions:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No {interview_type} questions found for this company"
+                )
+            
+            # Calculate how many questions to use based on duration (90 seconds per question)
+            max_questions = max(1, duration // 90)
+            
+            # Select questions (if more than needed, take first N)
+            selected_questions = company_questions[:max_questions]
+            
+            # Format questions to match the expected structure
+            questions = []
+            for idx, q in enumerate(selected_questions, 1):
+                questions.append({
+                    "id": f"q{idx}",
+                    "text": q["question_text"],
+                    "estimated_seconds": 90
+                })
+            
+            # Use company name as job description for display
+            if not job_description:
+                job_description = f"Interview for {company['name']}"
 
     session_id = str(uuid.uuid4())
 
     with get_db() as db:
-        db.interview_sessions.insert_one({
+        session_data = {
             "id": session_id,
             "user_id": user_id,
-            "job_description": job_description,
+            "interview_mode": interview_mode,
+            "job_description": job_description or "",
             "resume_text": resume_text,
             "duration_seconds": duration,
             "interview_type": interview_type,
@@ -45,13 +106,20 @@ async def create_session(
             "final_score": None,
             "created_at": datetime.utcnow(),
             "completed_at": None
-        })
+        }
+        
+        if session_company_id:
+            session_data["company_id"] = session_company_id
+        
+        db.interview_sessions.insert_one(session_data)
 
     return {
         "session_id": session_id,
         "questions": questions,
         "duration_seconds": duration,
-        "interview_type": interview_type
+        "interview_type": interview_type,
+        "interview_mode": interview_mode,
+        "company_id": session_company_id
     }
 
 
