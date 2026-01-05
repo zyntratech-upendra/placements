@@ -40,26 +40,7 @@ JWT_SECRET=your_secret_key
 ML_SERVICE_URL=http://localhost:8000  # Add this if Python backend is on different URL
 ```
 
-### Step 3: Check System Dependencies
-
-**Install Poppler (required for PDF to image conversion):**
-
-- **Ubuntu/Debian:**
-  ```bash
-  sudo apt-get update
-  sudo apt-get install poppler-utils
-  ```
-
-- **macOS:**
-  ```bash
-  brew install poppler
-  ```
-
-- **Windows:**
-  Download from: https://github.com/oschwartz10612/poppler-windows/releases
-  Add to PATH or set environment variable
-
-### Step 4: Verify Python Dependencies
+### Step 3: Verify Python Dependencies
 
 ```bash
 cd interview-backend
@@ -67,7 +48,7 @@ pip install -r requirements.txt
 ```
 
 Make sure these are installed:
-- `pdf2image==1.16.3`
+- `PyMuPDF==1.23.8` (for PDF to image conversion - no external dependencies needed)
 - `Pillow==10.2.0`
 - `openai==1.12.0`
 

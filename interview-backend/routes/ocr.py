@@ -106,22 +106,8 @@ async def parse_document(file: UploadFile = File(...)):
             
             status_code = 200 if result['success'] else 400
             return JSONResponse(status_code=status_code, content=result)
-        except ValueError as ve:
-            # Handle Poppler installation errors specifically
-            error_msg = str(ve)
-            if "poppler" in error_msg.lower():
-                logger.error("Poppler installation error detected")
-                return JSONResponse(
-                    status_code=503,
-                    content={
-                        'success': False,
-                        'error': 'Poppler is required for PDF processing. Please install Poppler and ensure it is in your system PATH. See POPPLER_INSTALLATION_WINDOWS.md for instructions.',
-                        'questions': [],
-                        'total_extracted': 0,
-                        'total_valid': 0,
-                        'installation_guide': 'https://github.com/oschwartz10612/poppler-windows/releases'
-                    }
-                )
+        except Exception as e:
+            logger.error(f"Error processing document: {str(e)}")
             raise
 
     except HTTPException:
