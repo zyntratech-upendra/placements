@@ -42,10 +42,11 @@ def transcribe_audio(audio_source: Union[str, BinaryIO, UploadFile]) -> str:
         close_when_done = False
 
     try:
-        # Perform transcription
+        # Perform transcription - force English output regardless of detected language
         response = client.audio.transcriptions.create(
             model="gpt-4o-mini-transcribe",  # newer, faster Whisper model
             file=audio_file,
+            language="en",  # force transcription language to English
         )
         text = (response.text or "").strip()
         return text
